@@ -55,7 +55,7 @@ if [ $NAME == "validator" ]; then
 fi
 
 #The name of the docker image built in the "auto" branch
-PRE_NAME=libra/test:libra_${tag_name}_pre_${BRANCH}_${GIT_REV}
+PRE_NAME=libra/${tag_name}:pre_${BRANCH}_${GIT_REV}
 
 #If not a prebuild *attempt* to pull the previously built image.
 if [ $PREBUILD != "true" ]; then
@@ -78,7 +78,8 @@ if [ "$PULLED" != "0" ]; then
   if [ $PREBUILD == "true" ]; then
     if [ $PUSH == "true" ]; then
       echo pushing ${PRE_NAME}
-      docker push ${PRE_NAME}
+      docker trust sign ${PRE_NAME}
+      docker push --disable-content-trust=false ${PRE_NAME}
     else
       echo Dry run, Not pushing ${PRE_NAME}
     fi
@@ -87,12 +88,14 @@ fi
 
 #if not a prebuild tag and push, usually means this is called from a release branch
 if [ $PREBUILD != "true" ]; then
-  PUB_NAME=libra/test:libra_${tag_name}_${BRANCH}_${GIT_REV}
+  PUB_NAME=libra/${tag_name}:${BRANCH}_${GIT_REV}
   echo retagging ${PRE_NAME} as ${PUB_NAME}
   docker tag ${PRE_NAME} ${PUB_NAME}
   if [ $PUSH == "true" ]; then
+    echo signing ${PUB_NAME}
+    docker trust sign ${PUB_NAME}
     echo pushing ${PUB_NAME}
-    docker push ${PUB_NAME}
+    docker push --disable-content-trust=false ${PUB_NAME}
   else
     echo Dry run, Not pushing ${PUB_NAME}
   fi
